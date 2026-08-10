@@ -1,0 +1,87 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Live Currency Exchange Dashboard</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box;font-family:Segoe UI,Arial,sans-serif}
+body{min-height:100vh;color:#fff;overflow-x:hidden;background:linear-gradient(-45deg,#0f172a,#111827,#1e293b,#312e81,#0f172a);background-size:500% 500%;animation:bgMove 18s ease infinite;}
+@keyframes bgMove{0%{background-position:0% 50%}50%{background-position:100% 50%}100%{background-position:0% 50%}}
+body:before{content:'';position:fixed;inset:0;background:url('https://images.unsplash.com/photo-1517048676732-d65bc937f952?auto=format&fit=crop&w=1600&q=80') center/cover no-repeat;filter:blur(12px) brightness(.25);z-index:-1}
+.container{max-width:1450px;margin:auto;padding:20px}
+.company{text-align:center;color:#ff4d4d;font-size:2.3rem;font-weight:800;text-shadow:0 0 15px rgba(255,0,0,.5)}
+.header{text-align:center;margin:15px 0 25px}
+.header h1{font-size:2.5rem;text-shadow:0 0 15px cyan,0 0 25px #00f7ff;animation:float 4s infinite}
+@keyframes float{50%{transform:translateY(-5px)}}
+.glass{backdrop-filter:blur(20px);background:rgba(255,255,255,.12);border:1px solid rgba(255,255,255,.1);box-shadow:0 10px 35px rgba(0,0,0,.4)}
+.cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(250px,1fr));gap:20px}
+.card{padding:20px;border-radius:25px;transition:.5s;animation:fade .8s}
+@keyframes fade{from{opacity:0;transform:translateY(20px)}to{opacity:1;transform:none}}
+.card:hover{transform:translateY(-10px) rotateX(5deg) scale(1.03)}
+.usd{background:linear-gradient(135deg,#0ea5e9,#1d4ed8)}
+.eur{background:linear-gradient(135deg,#003399,#6d28d9)}
+.gbp{background:linear-gradient(135deg,#cf1020,#1e40af)}
+.mxn{background:linear-gradient(135deg,#16a34a,#dc2626)}
+.jpy{background:linear-gradient(135deg,#6b7280,#dc2626)}
+.flag{font-size:2.2rem}.name{font-size:1.45rem;font-weight:700;margin:5px 0}.rate{font-size:1.7rem;font-weight:800;margin:10px 0}
+.flash{animation:flash 1s}
+@keyframes flash{50%{transform:scale(1.08)}}
+.timeBox,.converter{margin-top:25px;padding:22px;border-radius:25px}
+.timeVal{text-align:center;font-size:1.7rem;font-weight:800;color:#ffd166}
+.converter h2{text-align:center;margin-bottom:12px}
+select,input{width:100%;padding:14px;border:none;border-radius:12px;margin:10px 0}
+.result{text-align:center;font-size:1.6rem;color:#00ffbf;font-weight:800}
+.loader{text-align:center;padding:15px;font-size:1.2rem}
+footer{margin-top:25px;background:#777;color:#fff;padding:12px;overflow:hidden}
+.marquee{display:inline-block;white-space:nowrap;animation:marquee 20s linear infinite;padding-left:100%}
+@keyframes marquee{0%{transform:translateX(0)}100%{transform:translateX(-200%)} }
+@media(max-width:768px){.header h1{font-size:1.8rem}.company{font-size:1.8rem}}
+</style>
+</head>
+<body>
+<div class='container'>
+<div class='company'>L.G.Balakrishnan & Bros Ltd</div>
+<div class='header'>
+<h1>Live Currency Exchange Dashboard</h1>
+<p>Real-Time Exchange Rates Against Indian Rupee (INR)</p>
+<div id='headerTime'></div>
+</div>
+<div id='loader' class='loader'>Fetching Live Rates...</div>
+<div class='cards' id='cards'></div>
+<div class='glass timeBox'><div class='timeVal' id='liveTime'></div></div>
+<div class='glass converter'>
+<h2>Currency Converter</h2>
+<select id='currency'></select>
+<input type='number' id='amount' value='10' placeholder='Enter Amount'>
+<div id='result' class='result'></div>
+</div>
+<footer><div class='marquee'>Website is developed by SSR TEAM - EXPORT MARKETING</div></footer>
+</div>
+<script>
+const info={USD:['🇺🇸','US Dollar','usd'],EUR:['🇪🇺','Euro','eur'],GBP:['🇬🇧','British Pound','gbp'],MXN:['🇲🇽','Mexican Peso','mxn'],JPY:['🇯🇵','Japanese Yen','jpy']};
+let rates={};
+function loadCurrencies(){let s=document.getElementById('currency');Object.keys(info).forEach(c=>s.innerHTML+=`<option value="${c}">${c}</option>`)}
+async function getRates(){
+try{
+const res=await fetch('https://open.er-api.com/v6/latest/INR');
+const data=await res.json();
+let html='';
+for(const c of Object.keys(info)){
+let rate=(1/data.rates[c]).toFixed(c==='JPY'?4:2);
+rates[c]=Number(rate);
+html+=`<div class='card glass ${info[c][2]}'><div class='flag'>${info[c][0]}</div><div>${c}</div><div class='name'>${info[c][1]}</div><div class='rate flash'>1 ${c} = ${rate} INR</div><div>Updated: ${new Date().toLocaleTimeString()}</div></div>`;
+}
+document.getElementById('cards').innerHTML=html;
+document.getElementById('loader').style.display='none';
+convert();
+}catch(e){document.getElementById('loader').innerHTML='Unable to fetch exchange rates.';}
+}
+function convert(){let c=currency.value;let a=parseFloat(amount.value)||0;result.innerHTML=`${a} ${c} = ${(a*(rates[c]||0)).toFixed(2)} INR`;}
+function updateClock(){let n=new Date();let t=n.toLocaleTimeString('en-US',{hour:'2-digit',minute:'2-digit'});let d=n.toLocaleDateString('en-GB');let day=n.toLocaleDateString('en-US',{weekday:'long'}).toUpperCase();liveTime.innerHTML=`${t} - ${d} - ${day}`;headerTime.innerHTML=n.toLocaleString();}
+loadCurrencies();getRates();updateClock();
+setInterval(getRates,30000);
+setInterval(updateClock,1000);
+currency.onchange=convert;amount.oninput=convert;
+</script>
+</body></html>
